@@ -5,6 +5,7 @@ var banned = document.getElementById('ban-list')
 var debugDelete = document.getElementById('delete')
 var timerReset = document.getElementById('reset-timer')
 var banSites = []
+var timerOn = false
 
 let timerId;
 let isPaused = false
@@ -34,6 +35,11 @@ timerReset.addEventListener('click', () => {
     chrome.runtime.sendMessage({ action: "setTime", time: { sec, min, hour } }, function (response) {
         console.log(response);
     });
+    chrome.storage.local.set({ "timerOn": false })
+    time = { "hour": hour, "min": min, "sec": sec }
+    chrome.storage.local.set({ "time": time })
+    timerOn = false
+
 })
 
 
@@ -66,6 +72,8 @@ timerStart.addEventListener('click', () => {
     checkTab()
     timerStart.style.display = 'none'
     timerReset.style.display = 'inline-block'
+    chrome.storage.local.set({"timerOn" : true})
+    timerOn = true
 })
 
 form.addEventListener('submit', (event) => {
@@ -125,6 +133,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateTime()
             }
         })
+    timerOn = chrome.storage.local.get(["timerOn"])
+    if (timerOn){
+        timerStart.style.display = 'none'
+        timerReset.style.display = 'inline-block'
+        checkTab()
+    }
+    else {
+        timerStart.style.display = 'inline-block'
+        timerReset.style.display = 'none'
+    }
 });
 
 debugDelete.addEventListener('click', () => {
