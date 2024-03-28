@@ -17,13 +17,10 @@ function getActiveTabURL() {
     chrome.tabs.query(queryOptions, (tab) => {
         const activeTab = tab[0]
         if (activeTab && activeTab.url) {
-            // console.log("Active tab URL:", activeTab.url);
             if (bannedSites.includes(activeTab.url)){
                 console.log(activeTab.url)
-                chrome.runtime.sendMessage({message: "active"})
+                // chrome.runtime.sendMessage({message: "active"})
             }
-        
-        
         }
     })
 }
@@ -35,7 +32,25 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     }
 });
 
+// Listens to any changes on the banned sites
 chrome.storage.local.onChanged.addListener((changes) => {
     bannedSites = [...changes.bannedSites.newValue]
     console.log(bannedSites)
 })
+
+
+function setTime(s, m, h) {
+    sec = s
+    min = m
+    hr = h
+    console.log(sec, min, hr)
+}
+
+// Listen for messages from other parts of the extension
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "setTime" && message.time) {
+        setTime(message.time.sec, message.time.min, message.time.hour);
+        sendResponse({ status: "Time set successfully" });
+    }
+});
+

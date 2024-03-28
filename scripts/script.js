@@ -4,8 +4,10 @@ var form = document.getElementById('website-input')
 var banned = document.getElementById('ban-list')
 var debugDelete = document.getElementById('delete')
 var timerReset = document.getElementById('reset-timer')
+var banSites = []
 
-
+let timerId;
+let isPaused = false
 let timer;
 let sec = 0;
 let min = 30;
@@ -16,6 +18,11 @@ function updateTime() {
     let minPretty = min < 10 ? "0" + min : min;
     let hourPretty = hour < 10 ? "0" + hour : hour;
     document.getElementById("timer").innerText = `${hourPretty}:${minPretty}:${secPretty}`;
+    
+    chrome.runtime.sendMessage({ action: "setTime", time: { sec, min, hour } }, function (response) {
+        console.log(response);
+    });
+
 }
 
 timerReset.addEventListener('click', () => {
@@ -28,19 +35,33 @@ timerReset.addEventListener('click', () => {
 })
 
 
+function startTimer() {
+    if (!timerId) {
+        timerId = setInterval(() => {
+            sec--;
+            if (sec == -1) {
+                min--;
+                sec = 59;
+            }
+            if (min == -1) {
+                hour--;
+                min = 59;
+            }
+            updateTime();
+        }, 1000)
+    }
+}
+
+function pauseTimer() {
+    if (timerId) {
+        clearInterval(timerId)
+        timeId = null
+        isPaused = true
+    }
+}
+
 timerStart.addEventListener('click', () => {
-    timer = setInterval(() => {
-        sec--;
-        if (sec == -1) {
-            min--;
-            sec = 59;
-        }
-        if (min == -1) {
-            hour--;
-            min = 59;
-        }
-        updateTime();
-    }, 1000)
+    checkTab()
     timerStart.style.display = 'none'
     timerReset.style.display = 'inline-block'
 })
@@ -58,45 +79,66 @@ form.addEventListener('submit', (event) => {
 function saveList(li) {
     var items = []
     items.push(li.textContent)
-    
+
     chrome.storage.local.get(['bannedSites'])
         .then((result) => {
             let currentList = result.bannedSites || []
             let updatedList = [...currentList, ...items]
 
             items = []
-            return chrome.storage.local.set({'bannedSites': updatedList})
+            return chrome.storage.local.set({ 'bannedSites': updatedList })
         })
         .then(() => {
             return chrome.storage.local.get(['bannedSites']);
         })
         .then((result) => {
             console.log(result.bannedSites)
+            banSites = [...result.bannedSites]
         })
         .catch(e => console.log(e))
-    
-   
+
+
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.get(['bannedSites'])
-    .then((data) => {
-        if (data.bannedSites) {
-            data.bannedSites.forEach((wname) => {
-                var li = document.createElement("li");
-                li.appendChild(document.createTextNode(wname))
-                banned.appendChild(li);
-            })
-        }
-    })
-    .catch(e => console.log(e))
+        .then((data) => {
+            if (data.bannedSites) {
+                data.bannedSites.forEach((wname) => {
+                    var li = document.createElement("li");
+                    li.appendChild(document.createTextNode(wname))
+                    banned.appendChild(li);
+                    banSites = [...data.bannedSites]
+                })
+            }
+        })
+        .catch(e => console.log(e))
 });
 
 debugDelete.addEventListener('click', () => {
-    chrome.storage.local.set({'bannedSites': []})
+    chrome.storage.local.set({ 'bannedSites': [] })
 })
 
+function checkTab() {
 
-chrome.runtime.sendMessage({message: {}})
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        var activeTab = tabs[0]
+
+        if (activeTab) {
+            if (banSites.includes(activeTab.url)) {
+                console.log("include")
+                startTimer()
+            }
+            else {
+                pauseTimer()
+            }
+        }
+    })
+}
+
+
+
+
+
 
 updateTime()
