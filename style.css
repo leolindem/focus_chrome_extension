@@ -1,0 +1,29 @@
+body {
+    width: 320px;
+    height: 500px;
+    border: 1px solid black
+}
+
+.title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+h1 {
+    margin-bottom: 10px;
+}
+
+h3{
+    text-align: center;
+    margin-top: 10px;
+}
+
+.block-websites {
+    display: flex;
+    justify-content: center;
+}
+
+#reset-timer {
+    display: none;
+}
