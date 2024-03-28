@@ -1,7 +1,9 @@
 
 let sec = 0
 let min = 0
-let hr = 0
+let hour = 0
+let timerId;
+let isPaused = false
 
 bannedSites = []
 
@@ -19,7 +21,11 @@ function getActiveTabURL() {
         if (activeTab && activeTab.url) {
             if (bannedSites.includes(activeTab.url)){
                 console.log(activeTab.url)
-                // chrome.runtime.sendMessage({message: "active"})
+                console.log(hour, min, sec)
+                startTimer()
+            }
+            else {
+                pauseTimer()
             }
         }
     })
@@ -34,16 +40,22 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
 // Listens to any changes on the banned sites
 chrome.storage.local.onChanged.addListener((changes) => {
-    bannedSites = [...changes.bannedSites.newValue]
-    console.log(bannedSites)
+    if (changes.bannedSites){
+        bannedSites = [...changes.bannedSites.newValue]
+        console.log(bannedSites)
+    }
+    if (changes.time){
+        console.log(changes.time)
+    }
+    
 })
 
 
 function setTime(s, m, h) {
     sec = s
     min = m
-    hr = h
-    console.log(sec, min, hr)
+    hour = h
+    console.log(sec, min, hour)
 }
 
 // Listen for messages from other parts of the extension
@@ -54,3 +66,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
+function startTimer() {
+    if (!timerId) {
+        timerId = setInterval(() => {
+            sec--;
+            if (sec == -1) {
+                min--;
+                sec = 59;
+            }
+            if (min == -1) {
+                hour--;
+                min = 59;
+            }
+            time = {"hour": hour, "min":min, "sec":sec}
+            chrome.storage.local.set({"time" : time})
+
+            console.log(hour, min, sec)
+        }, 1000)
+    }
+}
+
+function pauseTimer() {
+    if (timerId) {
+        clearInterval(timerId)
+        timerId = null
+        isPaused = true
+    }
+}

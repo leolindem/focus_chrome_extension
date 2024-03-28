@@ -18,7 +18,6 @@ function updateTime() {
     let minPretty = min < 10 ? "0" + min : min;
     let hourPretty = hour < 10 ? "0" + hour : hour;
     document.getElementById("timer").innerText = `${hourPretty}:${minPretty}:${secPretty}`;
-    
     chrome.runtime.sendMessage({ action: "setTime", time: { sec, min, hour } }, function (response) {
         console.log(response);
     });
@@ -32,6 +31,9 @@ timerReset.addEventListener('click', () => {
     sec = 0
     timerStart.style.display = 'inline-block'
     timerReset.style.display = 'none'
+    chrome.runtime.sendMessage({ action: "setTime", time: { sec, min, hour } }, function (response) {
+        console.log(response);
+    });
 })
 
 
@@ -55,7 +57,7 @@ function startTimer() {
 function pauseTimer() {
     if (timerId) {
         clearInterval(timerId)
-        timeId = null
+        timerId = null
         isPaused = true
     }
 }
@@ -113,6 +115,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(e => console.log(e))
+
+    chrome.storage.local.get(["time"])
+        .then((data) => {
+            if (data.time){
+                sec = data.time.sec
+                min = data.time.min
+                hour = data.time.hour
+                updateTime()
+            }
+        })
 });
 
 debugDelete.addEventListener('click', () => {
@@ -136,9 +148,3 @@ function checkTab() {
     })
 }
 
-
-
-
-
-
-updateTime()
